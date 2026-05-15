@@ -1293,8 +1293,7 @@ function triggerHit(e){
 
     const info = getZoneFromClick(e);
     if (!info){
-        // off-face click -> small dust/sweat reaction only
-        spawnSweat(localX, localY);
+        // off-face click -> no reaction
         return;
     }
 
@@ -1329,13 +1328,6 @@ function triggerHit(e){
     spawnImpact(localX, localY);
     spawnPow(localX, localY - 24, info.powText);
 
-    // sweat drop near forehead when really upset
-    if (mood >= CRY_THRESHOLD * 0.6){
-        const wrapRect = boyHWrap.getBoundingClientRect();
-        const fx = wrapRect.left - stageRect.left + wrapRect.width * (0.4 + Math.random()*0.2);
-        const fy = wrapRect.top  - stageRect.top  + wrapRect.height * 0.12;
-        spawnSweat(fx, fy);
-    }
 
     playSlap(info.power);
 
