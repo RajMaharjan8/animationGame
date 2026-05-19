@@ -1607,9 +1607,9 @@ loadHit();
     const GRAVITY     = 2800;      // px/s^2
     const JUMP_V      = 900;       // first jump take-off speed
     const DJUMP_V     = 820;       // mid-air double-jump speed
-    const START_SPEED = 330;       // px/s
-    const SPEED_RAMP  = 11;        // px/s gained per second
-    const MAX_SPEED   = 780;
+    const START_SPEED = 470;       // px/s
+    const SPEED_RAMP  = 23;        // px/s gained per second
+    const MAX_SPEED   = 1080;
     const FINISH_DIST = 19000;     // distance before the girl appears
     const STRIDE_PX   = 62;        // travel per run-cycle frame
     const CHAR_HB     = { w:54, h:112 };          // character hit-box
@@ -1623,6 +1623,9 @@ loadHit();
                                    // has hearts/sparkles drawn above her head)
     const GIRL_BOTTOM = 2540;      // her feet row in the source image
     const GIRL_H      = 142;       // rendered girl height — matches the boy
+    const GIRL_STOP_X = CW - 185;  // she waits here, at the right end of path
+    const MEET_GAP    = 150;       // gap the boy keeps from the girl on arrival
+    const APPROACH_SPD= 250;       // boy's jog speed on the final approach
 
     /* ---------- asset loading ---------- */
     const A = {};
@@ -1645,7 +1648,7 @@ loadHit();
     /* ---------- game state ---------- */
     let state = "loading";        // loading|ready|playing|finishing|over|win
     let bgScroll, speed, distance, runTimer, runFrame;
-    let charY, charVY, jumpsUsed, landTimer;
+    let charX, charY, charVY, jumpsUsed, landTimer;
     let obstacles, particles, spawnGapPx, girl, shake, meetTimer;
     let best = parseInt(localStorage.getItem("runBestDist") || "0", 10);
 
@@ -1655,7 +1658,7 @@ loadHit();
 
     function resetGame(){
         bgScroll=0; speed=START_SPEED; distance=0; runTimer=0; runFrame=0;
-        charY=GROUND_Y; charVY=0; jumpsUsed=0; landTimer=0;
+        charX=CHAR_X; charY=GROUND_Y; charVY=0; jumpsUsed=0; landTimer=0;
         obstacles=[]; particles=[]; spawnGapPx=560; girl=null; shake=0;
         meetTimer=0;
     }
@@ -1730,17 +1733,20 @@ loadHit();
     function puff(n, scale){
         for (let i=0;i<n;i++)
             particles.push({
-                x: CHAR_X + rand(-20,12), y: charY + rand(-6,2),
+                x: charX + rand(-20,12), y: charY + rand(-6,2),
                 vx: rand(-90,-220)*scale - speed*0.12,
                 vy: rand(-130,40), life: rand(0.3,0.6), r: rand(3,7)
             });
     }
     function heart(){
+        const hl = rand(1.3,2.4);
+        const cols = ["#ff5d8f","#ff86a8","#ff3d6e","#ffa5be","#ff6f91"];
         particles.push({
-            x: CHAR_X + rand(60,300), y: GROUND_Y - rand(30,260),
+            x: charX + rand(60,300), y: GROUND_Y - rand(30,260),
             vx: rand(-45,45), vy: rand(-160,-50),
-            life: rand(1.3,2.4), heart:true,
-            e: "💖💗💕❤️✨"[(Math.random()*5)|0]
+            life: hl, maxLife: hl, heart:true,
+            size: rand(16,30),
+            col: cols[(Math.random()*cols.length)|0]
         });
     }
     function stepParticles(dt){
@@ -1770,10 +1776,11 @@ loadHit();
                 distance += speed*dt;
                 if (distance >= FINISH_DIST){
                     state = "finishing";
-                    girl = { x: CW + 140 };
+                    girl = { x: CW + 140, arrived:false };
                 }
             }
-            bgScroll += speed*dt;
+            // the world keeps scrolling until the girl has reached her spot
+            if (!(girl && girl.arrived)) bgScroll += speed*dt;
 
             runTimer += speed*dt;
             runFrame = Math.floor(runTimer/STRIDE_PX) % RUN_SEQ.length;
@@ -1788,7 +1795,9 @@ loadHit();
 
             if (state === "playing"){
                 spawnGapPx -= speed*dt;
-                if (spawnGapPx <= 0){
+                // stop spawning well before the finish so the last stretch is
+                // naturally clear — no last-second rock that has to disappear
+                if (spawnGapPx <= 0 && distance < FINISH_DIST - 1500){
                     spawnRock();
                     spawnGapPx = rand(360,680) + speed*0.42;
                 }
@@ -1796,7 +1805,7 @@ loadHit();
             for (const o of obstacles) o.x -= speed*dt;
             obstacles = obstacles.filter(o => o.x + o.w > -20);
 
-            const cb = { x:CHAR_X-CHAR_HB.w/2, y:charY-CHAR_HB.h,
+            const cb = { x:charX-CHAR_HB.w/2, y:charY-CHAR_HB.h,
                          w:CHAR_HB.w, h:CHAR_HB.h };
             for (const o of obstacles){
                 const ix = o.w*0.18, it = o.h*0.13;
@@ -1807,15 +1816,26 @@ loadHit();
             }
 
             if (state === "finishing" && girl){
-                const meetX = CHAR_X + 120;
-                if (girl.x > meetX) girl.x -= speed*dt;
-                if (girl.x < meetX) girl.x = meetX;
-                // they meet once she has arrived AND the boy is back down
-                if (girl.x <= meetX && onGround()){
-                    state = "meeting";
-                    meetTimer = 0;
-                    charY = GROUND_Y; charVY = 0;
-                    for (let i=0;i<14;i++) heart();
+                if (!girl.arrived){
+                    // she glides in with the world, then waits at the right end
+                    girl.x -= speed*dt;
+                    if (girl.x <= GIRL_STOP_X){
+                        girl.x = GIRL_STOP_X;
+                        girl.arrived = true;
+                    }
+                } else {
+                    // the boy jogs the final stretch up to where she waits
+                    const targetX = girl.x - MEET_GAP;
+                    if (charX < targetX)
+                        charX = Math.min(targetX, charX + APPROACH_SPD*dt);
+                    // they meet once he's reached her AND is back on the ground
+                    if (charX >= targetX && onGround()){
+                        charX = targetX;
+                        state = "meeting";
+                        meetTimer = 0;
+                        charY = GROUND_Y; charVY = 0;
+                        for (let i=0;i<14;i++) heart();
+                    }
                 }
             }
         } else if (state === "meeting"){
@@ -1829,6 +1849,9 @@ loadHit();
                 if (typeof playFanfare === "function") playFanfare();
                 endScreen(true);
             }
+        } else if (state === "win"){
+            // keep the hearts popping on the celebration screen
+            if (Math.random() < dt*6) heart();
         }
         stepParticles(dt);
         if (shake > 0) shake = Math.max(0, shake - dt*55);
@@ -1862,8 +1885,8 @@ loadHit();
         if (!im || !im.naturalWidth) return;
         const w = im.naturalWidth*sc, h = im.naturalHeight*sc;
         const lift = (GROUND_Y - charY) / 260;
-        shadow(CHAR_X, w*0.40*(1-lift*0.55), 0.30*(1-lift*0.6));
-        ctx.drawImage(im, CHAR_X - w/2, charY - h, w, h);
+        shadow(charX, w*0.40*(1-lift*0.55), 0.30*(1-lift*0.6));
+        ctx.drawImage(im, charX - w/2, charY - h, w, h);
     }
     function draw(){
         ctx.save();
@@ -1904,9 +1927,25 @@ loadHit();
 
         for (const p of particles){
             if (p.heart){
-                ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
-                ctx.font = "30px serif";
-                ctx.fillText(p.e, p.x, p.y);
+                // pop-in: scale up fast with a springy overshoot, then settle
+                const age = (p.maxLife || 1) - p.life;
+                const t   = Math.min(1, age/0.24);
+                const c1  = 1.70158, c3 = c1+1;
+                const pop = 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2);
+                const s   = Math.max(0.1,(p.size||22)*pop);
+                // drawn as a vector shape so it always renders (no emoji font)
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, Math.min(1, p.life*1.4));
+                ctx.translate(p.x, p.y);
+                ctx.scale(s, s);
+                ctx.fillStyle = p.col || "#ff5d8f";
+                ctx.beginPath();
+                ctx.moveTo(0, -0.35);
+                ctx.bezierCurveTo(-0.5, -0.95, -1.0, -0.05, 0, 0.6);
+                ctx.bezierCurveTo( 1.0, -0.05,  0.5, -0.95, 0, -0.35);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
             } else {
                 ctx.globalAlpha = Math.max(0, Math.min(0.9, p.life*1.7));
                 ctx.fillStyle = "#d9c9a6";
