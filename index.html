@@ -378,6 +378,32 @@
         100% { opacity: 0; transform: translateX(-50%) scale(1.2); }
     }
 
+    /* cheeks that flush redder the more he's slapped */
+    .cheek{
+        position:absolute;
+        top:36%;
+        width:21%;
+        height:14%;
+        border-radius:50%;
+        background: radial-gradient(circle,
+                     rgba(255,45,45,0.92), rgba(255,85,85,0) 72%);
+        opacity:0;
+        pointer-events:none;
+        filter: blur(4px);
+        mix-blend-mode: multiply;
+        transition: opacity .45s ease;
+    }
+    .cheek-l{ left:17%; }
+    .cheek-r{ right:17%; }
+
+    /* he trembles when he's close to tears */
+    @keyframes tremble{
+        0%,100%{ transform: translate(0,0) rotate(0); }
+        25%    { transform: translate(-1.2px,0) rotate(-0.6deg); }
+        75%    { transform: translate(1.2px,0) rotate(0.6deg); }
+    }
+    .boy-h.trembling{ animation: tremble .16s ease-in-out infinite; }
+
     /* "POW!" comic text */
     .pow{
         position:absolute;
@@ -655,6 +681,116 @@
         color:#888;
     }
 
+    .hint b{ color:#ff4f81; }
+
+    /* ============ RUN GAME ============ */
+    .run-hud{
+        display:flex;
+        align-items:center;
+        gap:12px;
+        max-width:760px;
+        width:100%;
+        margin:2px auto 10px;
+    }
+
+    .run-stat{
+        background:#fff5f8;
+        border-radius:12px;
+        padding:8px 13px;
+        font-weight:bold;
+        color:#444;
+        font-size:14px;
+        white-space:nowrap;
+        box-shadow:0 3px 8px rgba(255,79,129,0.10);
+    }
+
+    .run-stat b{ color:#ff4f81; font-size:16px; }
+
+    .run-progress{
+        flex:1;
+        height:14px;
+        background:#fff5f8;
+        border-radius:8px;
+        overflow:hidden;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.10);
+    }
+
+    .run-progress-fill{
+        height:100%;
+        width:0%;
+        background: linear-gradient(90deg,#7ad9ff,#ff4f81);
+        transition: width .12s linear;
+    }
+
+    .run-wrap{
+        position:relative;
+        width:100%;
+        max-width:760px;
+        margin:0 auto;
+        border-radius:16px;
+        overflow:hidden;
+        line-height:0;
+        box-shadow:0 12px 30px rgba(40,30,80,0.30);
+    }
+
+    #runCanvas{
+        display:block;
+        width:100%;
+        height:auto;
+        background:#2b2350;
+        touch-action:manipulation;
+    }
+
+    .run-overlay{
+        position:absolute;
+        inset:0;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:16px;
+        padding:20px;
+        text-align:center;
+        color:#fff;
+        background:rgba(28,20,52,0.58);
+        transition: opacity .25s ease;
+    }
+
+    .run-overlay.hidden{
+        opacity:0;
+        pointer-events:none;
+    }
+
+    .run-overlay .big{
+        font-size:30px;
+        font-weight:bold;
+        text-shadow:0 3px 14px rgba(0,0,0,0.55);
+    }
+
+    .run-overlay .small{
+        font-size:15px;
+        line-height:1.5;
+        opacity:0.92;
+    }
+
+    .run-overlay button{
+        padding:13px 34px;
+        border:none;
+        border-radius:50px;
+        background:#ff4f81;
+        color:#fff;
+        font-size:17px;
+        font-weight:bold;
+        cursor:pointer;
+        box-shadow:0 6px 18px rgba(0,0,0,0.35);
+        transition: transform .15s ease, background .15s ease;
+    }
+
+    .run-overlay button:hover{
+        transform:scale(1.06);
+        background:#ff2e6d;
+    }
+
     @media(max-width:768px){
         .scene{
             width:100%;
@@ -679,6 +815,7 @@
 <nav class="navbar">
     <button class="tab-btn active" data-tab="A">A • Kiss 💋</button>
     <button class="tab-btn"        data-tab="B">B • Hit 👋</button>
+    <button class="tab-btn"        data-tab="C">C • Run 🏃</button>
 </nav>
 
 <div class="tab-content">
@@ -741,6 +878,8 @@
 
                 <div class="boy-h-wrap" id="boyHWrap">
                     <img class="boy-h" id="boyH" src="boy_neutral.png" alt="boy" draggable="false" />
+                    <div class="cheek cheek-l" id="cheekL"></div>
+                    <div class="cheek cheek-r" id="cheekR"></div>
                     <div class="face-flash" id="faceFlash"></div>
                 </div>
 
@@ -754,6 +893,30 @@
             </div>
 
             <div class="hint">Tip: hit the same spot fast for combos. Too many hits and he'll cry.</div>
+        </div>
+    </section>
+
+    <!-- ===================== TAB C : RUN GAME ===================== -->
+    <section class="panel" id="panelC">
+        <div class="container">
+
+            <h1 class="dark">🏃 Rooftop Run 🏃</h1>
+
+            <div class="run-hud">
+                <div class="run-stat">🏃 <b id="runDist">0</b> m</div>
+                <div class="run-progress">
+                    <div class="run-progress-fill" id="runProgress"></div>
+                </div>
+                <div class="run-stat">🏆 <b id="runBest">0</b> m</div>
+            </div>
+
+            <div class="run-wrap">
+                <canvas id="runCanvas" width="1024" height="546"></canvas>
+                <div class="run-overlay" id="runOverlay"></div>
+            </div>
+
+            <div class="hint">Press <b>Space</b> or tap to jump over the rocks •
+                reach her at the finish 💖</div>
         </div>
     </section>
 
@@ -1134,6 +1297,8 @@ const hitStage  = document.getElementById("hitStage");
 const boyH      = document.getElementById("boyH");
 const boyHWrap  = document.getElementById("boyHWrap");
 const faceFlash = document.getElementById("faceFlash");
+const cheekL    = document.getElementById("cheekL");
+const cheekR    = document.getElementById("cheekR");
 const hitFloor  = document.getElementById("hitFloor");
 const hHits     = document.getElementById("hHits");
 const hCombo    = document.getElementById("hCombo");
@@ -1203,6 +1368,21 @@ function refreshHud(){
     } else {
         moodLabel.innerText = "He's calm. Tap his face — left, right, or center.";
     }
+    updateMoodVisuals();
+}
+
+/* Builds his face up as he gets slapped: cheeks flush red and he
+   trembles when he's near crying.                                */
+function updateMoodVisuals(){
+    const f = (isCrying ? CRY_THRESHOLD : mood) / CRY_THRESHOLD;  // 0..1
+
+    // cheeks flush redder the more he's been slapped
+    const redness = Math.min(1, Math.pow(f, 0.65));
+    cheekL.style.opacity = redness;
+    cheekR.style.opacity = redness;
+
+    // he trembles when he's close to tears
+    boyH.classList.toggle("trembling", !isCrying && f >= 0.55);
 }
 
 function setExpression(src){
@@ -1404,6 +1584,384 @@ hResetBtn.addEventListener("click", () => {
 });
 
 loadHit();
+
+/* =====================================================================
+   TAB C : RUN GAME   —  canvas endless runner
+   Scrolling landscape, sprite-sheet run/jump animation, rock obstacles,
+   double-jump for big rocks, rising speed, and the girl at the finish.
+===================================================================== */
+(function(){
+    const canvas = document.getElementById("runCanvas");
+    if (!canvas) return;
+    const ctx    = canvas.getContext("2d");
+    const CW = canvas.width, CH = canvas.height;        // 1024 x 546
+    const overlay  = document.getElementById("runOverlay");
+    const progFill = document.getElementById("runProgress");
+    const distEl   = document.getElementById("runDist");
+    const bestEl   = document.getElementById("runBest");
+    const panelC   = document.getElementById("panelC");
+
+    /* ---------- tuning knobs ---------- */
+    const GROUND_Y    = 448;       // feet / rock-base line on the canvas
+    const CHAR_X      = 235;       // character's fixed horizontal anchor
+    const GRAVITY     = 2800;      // px/s^2
+    const JUMP_V      = 900;       // first jump take-off speed
+    const DJUMP_V     = 820;       // mid-air double-jump speed
+    const START_SPEED = 330;       // px/s
+    const SPEED_RAMP  = 11;        // px/s gained per second
+    const MAX_SPEED   = 780;
+    const FINISH_DIST = 19000;     // distance before the girl appears
+    const STRIDE_PX   = 62;        // travel per run-cycle frame
+    const CHAR_HB     = { w:54, h:112 };          // character hit-box
+    const RUN_SEQ     = [0,1,2,3];                 // distinct run frames
+    const JUMP_SCALE  = 1.30;      // jump pose has raised arms — scale the
+                                   // body up so it matches the running size
+    const STAND_SCALE = 1.10;      // standing pose (ready / over / win) up
+                                   // to match the running height
+    const ROCK_IDS    = [0,1,2,6,9,10,11,15,16];   // small, jumpable rocks
+    const GIRL_CONT_H = 2260;      // her BODY height in src px (the image also
+                                   // has hearts/sparkles drawn above her head)
+    const GIRL_BOTTOM = 2540;      // her feet row in the source image
+    const GIRL_H      = 142;       // rendered girl height — matches the boy
+
+    /* ---------- asset loading ---------- */
+    const A = {};
+    let toLoad = 0, done = 0;
+    function img(key, src){
+        toLoad++;
+        const im = new Image();
+        im.onload = im.onerror = () => { if (++done === toLoad) allLoaded(); };
+        im.src = src;
+        A[key] = im;
+    }
+    img("bg", "run/bg.png");
+    for (let i=0;i<5;i++) img("run"+i,  "run/sprites/run_"+i+".png");
+    for (let i=0;i<7;i++) img("jump"+i, "run/sprites/jump_"+i+".png");
+    ROCK_IDS.forEach(i => img("rock"+i, "run/sprites/rock_"+i+".png"));
+    img("girl", "girlexpression.png");
+
+    let WORLD_SCALE = 0.40;
+
+    /* ---------- game state ---------- */
+    let state = "loading";        // loading|ready|playing|finishing|over|win
+    let bgScroll, speed, distance, runTimer, runFrame;
+    let charY, charVY, jumpsUsed, landTimer;
+    let obstacles, particles, spawnGapPx, girl, shake, meetTimer;
+    let best = parseInt(localStorage.getItem("runBestDist") || "0", 10);
+
+    const rand = (a,b) => a + Math.random()*(b-a);
+    const pick = arr => arr[(Math.random()*arr.length)|0];
+    const onGround = () => charY >= GROUND_Y - 0.01;
+
+    function resetGame(){
+        bgScroll=0; speed=START_SPEED; distance=0; runTimer=0; runFrame=0;
+        charY=GROUND_Y; charVY=0; jumpsUsed=0; landTimer=0;
+        obstacles=[]; particles=[]; spawnGapPx=560; girl=null; shake=0;
+        meetTimer=0;
+    }
+    resetGame();
+
+    /* ---------- overlay screens ---------- */
+    function setOverlay(html, show){
+        overlay.innerHTML = html;
+        overlay.classList.toggle("hidden", !show);
+        const b = overlay.querySelector("button");
+        if (b) b.onclick = e => { e.stopPropagation(); action(); };
+    }
+    function readyScreen(){
+        setOverlay('<div class="big">🏃 Rooftop Run</div>' +
+            '<div class="small">Space / tap to jump over the rocks.<br>' +
+            'It speeds up as you go — reach her at the finish 💖</div>' +
+            '<button>Run! 🏃</button>', true);
+    }
+    function endScreen(win){
+        const m = Math.floor(distance/10);
+        const bm = Math.floor(best/10);
+        setOverlay('<div class="big">' +
+            (win ? '💖 Game Complete! 💖' : '💥 Ouch! Game Over') + '</div>' +
+            '<div class="small">Distance: ' + m + ' m &nbsp;•&nbsp; Best: ' + bm +
+            ' m</div><button>' + (win ? 'Play again 🏃' : 'Try again 🏃') +
+            '</button>', true);
+    }
+    function allLoaded(){
+        if (A.run0 && A.run0.naturalHeight)
+            WORLD_SCALE = 152 / A.run0.naturalHeight;
+        state = "ready";
+        readyScreen();
+    }
+
+    /* ---------- flow & input ---------- */
+    function action(){
+        if (typeof audioCtx !== "undefined" && audioCtx &&
+            audioCtx.state === "suspended") audioCtx.resume();
+        resetGame();
+        state = "playing";
+        overlay.classList.add("hidden");
+    }
+    function jump(){
+        if (state !== "playing" && state !== "finishing") return;
+        if (onGround()){
+            charVY = -JUMP_V; jumpsUsed = 1; puff(8,0.6); sfx("jump");
+        } else if (jumpsUsed < 2){
+            charVY = -DJUMP_V; jumpsUsed = 2; puff(10,1); sfx("double");
+        }
+    }
+    function press(){
+        if (state === "playing" || state === "finishing") jump();
+        else if (state === "ready" || state === "over" || state === "win") action();
+    }
+    canvas.addEventListener("pointerdown", e => { e.preventDefault(); press(); });
+    window.addEventListener("keydown", e => {
+        if (e.code === "Space" || e.key === " "){
+            if (!panelC.classList.contains("active")) return;
+            e.preventDefault();
+            press();
+        }
+    });
+
+    /* ---------- spawning & particles ---------- */
+    function spawnRock(){
+        const im = A["rock" + pick(ROCK_IDS)];
+        const h  = rand(42,120);                          // all single-jump
+        let   w  = (im.naturalWidth||120) * (h/(im.naturalHeight||120));
+        if (w > 165) w = 165;                             // keep it crossable
+        obstacles.push({ im, x:CW+30, w, h });
+    }
+    function puff(n, scale){
+        for (let i=0;i<n;i++)
+            particles.push({
+                x: CHAR_X + rand(-20,12), y: charY + rand(-6,2),
+                vx: rand(-90,-220)*scale - speed*0.12,
+                vy: rand(-130,40), life: rand(0.3,0.6), r: rand(3,7)
+            });
+    }
+    function heart(){
+        particles.push({
+            x: CHAR_X + rand(60,300), y: GROUND_Y - rand(30,260),
+            vx: rand(-45,45), vy: rand(-160,-50),
+            life: rand(1.3,2.4), heart:true,
+            e: "💖💗💕❤️✨"[(Math.random()*5)|0]
+        });
+    }
+    function stepParticles(dt){
+        for (const p of particles){
+            p.life -= dt;
+            p.x += p.vx*dt;
+            p.y += p.vy*dt;
+            p.vy += (p.heart ? 26 : 540)*dt;
+        }
+        particles = particles.filter(p => p.life > 0);
+    }
+
+    function crash(){
+        state = "over";
+        shake = 14;
+        best = Math.max(best, distance);
+        localStorage.setItem("runBestDist", Math.round(best));
+        if (typeof playSlap === "function") playSlap(1);
+        endScreen(false);
+    }
+
+    /* ---------- per-frame update ---------- */
+    function update(dt){
+        if (state === "playing" || state === "finishing"){
+            if (state === "playing"){
+                speed = Math.min(MAX_SPEED, speed + SPEED_RAMP*dt);
+                distance += speed*dt;
+                if (distance >= FINISH_DIST){
+                    state = "finishing";
+                    girl = { x: CW + 140 };
+                }
+            }
+            bgScroll += speed*dt;
+
+            runTimer += speed*dt;
+            runFrame = Math.floor(runTimer/STRIDE_PX) % RUN_SEQ.length;
+
+            charVY += GRAVITY*dt;
+            charY  += charVY*dt;
+            if (charY >= GROUND_Y){
+                if (charVY > 140){ landTimer = 0.13; puff(7,0.8); sfx("land"); }
+                charY = GROUND_Y; charVY = 0; jumpsUsed = 0;
+            }
+            if (landTimer > 0) landTimer -= dt;
+
+            if (state === "playing"){
+                spawnGapPx -= speed*dt;
+                if (spawnGapPx <= 0){
+                    spawnRock();
+                    spawnGapPx = rand(360,680) + speed*0.42;
+                }
+            }
+            for (const o of obstacles) o.x -= speed*dt;
+            obstacles = obstacles.filter(o => o.x + o.w > -20);
+
+            const cb = { x:CHAR_X-CHAR_HB.w/2, y:charY-CHAR_HB.h,
+                         w:CHAR_HB.w, h:CHAR_HB.h };
+            for (const o of obstacles){
+                const ix = o.w*0.18, it = o.h*0.13;
+                const rx = o.x+ix, ry = GROUND_Y-o.h+it;
+                const rw = o.w-2*ix, rh = o.h-it;
+                if (cb.x < rx+rw && cb.x+cb.w > rx &&
+                    cb.y < ry+rh && cb.y+cb.h > ry){ crash(); break; }
+            }
+
+            if (state === "finishing" && girl){
+                const meetX = CHAR_X + 120;
+                if (girl.x > meetX) girl.x -= speed*dt;
+                if (girl.x < meetX) girl.x = meetX;
+                // they meet once she has arrived AND the boy is back down
+                if (girl.x <= meetX && onGround()){
+                    state = "meeting";
+                    meetTimer = 0;
+                    charY = GROUND_Y; charVY = 0;
+                    for (let i=0;i<14;i++) heart();
+                }
+            }
+        } else if (state === "meeting"){
+            // boy and girl stand together, hearts rise, then it's complete
+            meetTimer += dt;
+            if (Math.random() < dt*7) heart();
+            if (meetTimer >= 1.6){
+                state = "win";
+                best = Math.max(best, distance);
+                localStorage.setItem("runBestDist", Math.round(best));
+                if (typeof playFanfare === "function") playFanfare();
+                endScreen(true);
+            }
+        }
+        stepParticles(dt);
+        if (shake > 0) shake = Math.max(0, shake - dt*55);
+
+        if (progFill) progFill.style.width =
+            Math.min(100, distance/FINISH_DIST*100) + "%";
+        if (distEl) distEl.textContent = Math.floor(distance/10);
+        if (bestEl) bestEl.textContent = Math.floor(best/10);
+    }
+
+    /* ---------- drawing ---------- */
+    function shadow(cx, rw, alpha){
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.ellipse(cx, GROUND_Y+8, Math.max(12,rw), 9, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+    }
+    function drawChar(){
+        // one full-body pose for the whole jump keeps the height constant
+        // (the tuck / crouch frames render much shorter, so they're skipped)
+        let im, sc = WORLD_SCALE;
+        if (state === "ready" || state === "win" || state === "over" ||
+            state === "meeting"){
+            im = A.jump0; sc = WORLD_SCALE*STAND_SCALE;
+        }
+        else if (!onGround()){ im = A.jump2; sc = WORLD_SCALE*JUMP_SCALE; }
+        else                  im = A["run"+RUN_SEQ[runFrame]];
+        if (!im || !im.naturalWidth) return;
+        const w = im.naturalWidth*sc, h = im.naturalHeight*sc;
+        const lift = (GROUND_Y - charY) / 260;
+        shadow(CHAR_X, w*0.40*(1-lift*0.55), 0.30*(1-lift*0.6));
+        ctx.drawImage(im, CHAR_X - w/2, charY - h, w, h);
+    }
+    function draw(){
+        ctx.save();
+        if (shake > 0)
+            ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+
+        if (A.bg && A.bg.naturalWidth){
+            // mirror alternate tiles so the scroll is perfectly seamless
+            const off = bgScroll % CW;
+            const k0  = Math.floor(bgScroll / CW);
+            for (let i=0;i<2;i++){
+                const x = -off + i*CW;
+                if ((k0 + i) & 1){
+                    ctx.save();
+                    ctx.translate(x + CW, 0);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(A.bg, 0, 0, CW, CH);
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(A.bg, x, 0, CW, CH);
+                }
+            }
+        } else {
+            ctx.fillStyle = "#2b2350"; ctx.fillRect(0,0,CW,CH);
+        }
+
+        for (const o of obstacles){
+            shadow(o.x+o.w/2, o.w*0.42, 0.30);
+            ctx.drawImage(o.im, o.x, GROUND_Y-o.h, o.w, o.h);
+        }
+        if (girl && A.girl.naturalWidth){
+            const gs = GIRL_H / GIRL_CONT_H;          // scale to the boy's size
+            const gw = A.girl.naturalWidth  * gs;
+            const gh = A.girl.naturalHeight * gs;
+            ctx.drawImage(A.girl, girl.x-gw/2, GROUND_Y - GIRL_BOTTOM*gs, gw, gh);
+        }
+        drawChar();
+
+        for (const p of particles){
+            if (p.heart){
+                ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+                ctx.font = "30px serif";
+                ctx.fillText(p.e, p.x, p.y);
+            } else {
+                ctx.globalAlpha = Math.max(0, Math.min(0.9, p.life*1.7));
+                ctx.fillStyle = "#d9c9a6";
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+
+    /* ---------- main loop ---------- */
+    let lastT = 0;
+    function frame(t){
+        requestAnimationFrame(frame);
+        let dt = (t - lastT) / 1000;
+        lastT = t;
+        if (!dt || dt < 0) dt = 0;
+        if (dt > 0.05) dt = 0.05;                  // clamp after a stall
+        if (!panelC.classList.contains("active")) return;   // pause off-tab
+        if (state !== "loading") update(dt);
+        draw();
+    }
+    setOverlay('<div class="big">Loading…</div>', true);
+    requestAnimationFrame(frame);
+
+    /* ---------- sound effects ---------- */
+    function sfx(type){
+        const c = (typeof ac === "function") ? ac() : null;
+        if (!c) return;
+        const t0 = c.currentTime;
+        if (type === "jump" || type === "double"){
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = "square";
+            const f0 = type === "double" ? 520 : 300;
+            const f1 = type === "double" ? 1050 : 700;
+            o.frequency.setValueAtTime(f0, t0);
+            o.frequency.exponentialRampToValueAtTime(f1, t0+0.13);
+            g.gain.setValueAtTime(0.16, t0);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0+0.18);
+            o.connect(g).connect(c.destination);
+            o.start(t0); o.stop(t0+0.2);
+        } else if (type === "land"){
+            const o = c.createOscillator(), g = c.createGain();
+            o.type = "sine";
+            o.frequency.setValueAtTime(190, t0);
+            o.frequency.exponentialRampToValueAtTime(60, t0+0.14);
+            g.gain.setValueAtTime(0.28, t0);
+            g.gain.exponentialRampToValueAtTime(0.0001, t0+0.18);
+            o.connect(g).connect(c.destination);
+            o.start(t0); o.stop(t0+0.2);
+        }
+    }
+})();
 
 </script>
 
